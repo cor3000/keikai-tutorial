@@ -19,6 +19,7 @@ public class AppContextListener implements ServletContextListener {
     private List<InputStream> getFormList(ServletContext context) {
         List<InputStream> list = new LinkedList<>();
         list.add(context.getResourceAsStream("/WEB-INF/form_leave.xlsx"));
+        context.setAttribute("template", list);
         return list;
     }
 

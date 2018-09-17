@@ -19,7 +19,7 @@ public class MyWorkflow {
 
     public MyWorkflow(String keikaiServerAddress) {
         spreadsheet = Keikai.newClient(keikaiServerAddress);
-        // close spreadsheet Java client when a browser disconnect to keikai server to avoid memory leak
+        // close spreadsheet Java client when a browser disconnects to keikai server to avoid memory leak
         spreadsheet.setUiActivityCallback(new UiActivity() {
             public void onConnect() {
             }
@@ -45,6 +45,16 @@ public class MyWorkflow {
             }
         };
         spreadsheet.addEventListener(Events.ON_CELL_CLICK, loginListener);
+//        System.out.println(spreadsheet.getWorksheet(0).getButton("login"));
+        System.out.println(spreadsheet.getWorksheet().getButton(0));
+//        System.out.println(spreadsheet.getWorksheet(0).getButton(1));
+//        System.out.println(spreadsheet.getWorksheet("login").getName());
+//        System.out.println(spreadsheet.getWorksheet(SHEET_LOGIN));
+//        System.out.println(spreadsheet.getWorksheet(SHEET_LOGIN).getButton(0).getName());
+//        spreadsheet.getWorksheet(0).getButton("login")
+//                .addAction((ShapeMouseEvent event) -> {
+//            login(spreadsheet.getRange("D2").getValue().toString());
+//        });
     }
 
     private void importFormFile(String formFileName) {

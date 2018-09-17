@@ -23,7 +23,7 @@ public class SampleDataDao {
             Class.forName("org.hsqldb.jdbc.JDBCDriver");
             try (Connection con = createConnection();) {
                 executeSqlFile(con);
-                System.out.println("-> initialized the database");
+                System.out.println("-> initialized a table " + TABLE_NAME);
             }
         } catch (Exception e) {
             e.printStackTrace();

@@ -1,5 +1,6 @@
 package io.keikai.tutorial;
 
+import java.io.File;
 import java.util.logging.*;
 
 public class Configuration {
@@ -17,5 +18,9 @@ public class Configuration {
         handler.setFormatter(new SimpleFormatter());
         handler.setLevel(Level.ALL);
         log.addHandler(handler);
+    }
+
+    static public String getDefaultFileFolder(){
+        return "/WEB-INF" + File.separator + Configuration.INTERNAL_FILE_FOLDER + File.separator;
     }
 }

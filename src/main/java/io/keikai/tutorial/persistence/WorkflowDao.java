@@ -18,7 +18,7 @@ public class WorkflowDao {
     public static final String HSQLDB_CONNECTION_STRING = "jdbc:hsqldb:file:database/tutorial;shutdown=true";
     static String TABLE_NAME = "workflow";
 
-    static public void initDatabase(List<InputStream> formFileList) {
+    static public void initDatabase() {
         try {
             Class.forName("org.hsqldb.jdbc.JDBCDriver");
             try (Connection con = createConnection();) {
@@ -46,27 +46,12 @@ public class WorkflowDao {
         file.execute();
     }
 
-    static public List queryAll() throws SQLException {
-        String sql = "SELECT * FROM " + TABLE_NAME;
-        try (Connection con = createConnection();
-             Statement statement = con.prepareStatement(sql);
-             ResultSet resultSet = statement.executeQuery(sql);
-        ) {
-            LinkedList list = new LinkedList<>();
-            while (resultSet.next()) {
-            }
-            return list;
-        }
-    }
 
-    static public void insert(Expense expense) {
+    static public void insertSubmission() {
         String sql = "INSERT INTO " + TABLE_NAME + " (category, quantity, subtotal) VALUES( ?, ?, ?)";
         try (Connection con = createConnection();
              PreparedStatement statement = con.prepareStatement(sql);
         ) {
-            statement.setString(1, expense.getCategory());
-            statement.setInt(2, expense.getQuantity());
-            statement.setInt(3, expense.getSubtotal());
             statement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();

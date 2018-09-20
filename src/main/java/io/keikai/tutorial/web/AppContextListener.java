@@ -17,7 +17,7 @@ public class AppContextListener implements ServletContextListener {
     public void contextInitialized(ServletContextEvent servletContextEvent) {
         SampleDataDao.initDatabase();
         WorkflowDao.initDatabase();
-        loadFormList();
+        loadFormList(servletContextEvent.getServletContext());
     }
 
     static private void loadFormList(ServletContext context) {
@@ -30,7 +30,7 @@ public class AppContextListener implements ServletContextListener {
     public void contextDestroyed(ServletContextEvent sce) {
     }
 
-    static public List<File> loadFormList() {
+    static public List<File> getFormList() {
         return formList;
     }
 }

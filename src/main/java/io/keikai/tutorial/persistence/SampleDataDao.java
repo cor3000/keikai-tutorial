@@ -46,25 +46,6 @@ public class SampleDataDao {
         file.execute();
     }
 
-    static public List<Expense> queryAll() throws SQLException {
-        String sql = "SELECT * FROM " + TABLE_NAME;
-        try (Connection con = createConnection();
-             Statement statement = con.prepareStatement(sql);
-             ResultSet resultSet = statement.executeQuery(sql);
-        ) {
-            LinkedList<Expense> list = new LinkedList<>();
-            while (resultSet.next()) {
-                Expense expense = new Expense();
-                expense.setId(resultSet.getInt("id"));
-                expense.setCategory(resultSet.getString("category"));
-                expense.setQuantity(resultSet.getInt("quantity"));
-                expense.setSubtotal(resultSet.getInt("subtotal"));
-                list.add(expense);
-            }
-            return list;
-        }
-    }
-
     static public List<Expense> queryByCategory() {
         String sql = "SELECT category, sum(quantity) as quantity, sum(subtotal) as subtotal FROM " + TABLE_NAME + " GROUP BY category";
         LinkedList<Expense> list = new LinkedList<>();

@@ -5,6 +5,7 @@ import org.hsqldb.cmdline.*;
 import java.io.*;
 import java.net.URISyntaxException;
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -16,7 +17,7 @@ public class WorkflowDao {
      * shutdown=true, Automatic Shutdown, shut down the database when the last connection is closed
      */
     public static final String HSQLDB_CONNECTION_STRING = "jdbc:hsqldb:file:database/tutorial;shutdown=true";
-    static String TABLE_NAME = "workflow";
+    static final String TABLE_NAME = "workflow";
 
     static public void initDatabase() {
         try {
@@ -46,16 +47,46 @@ public class WorkflowDao {
         file.execute();
     }
 
-
-    static public void insertSubmission() {
-        String sql = "INSERT INTO " + TABLE_NAME + " (category, quantity, subtotal) VALUES( ?, ?, ?)";
+    synchronized static public void insert(Submission submission) {
+        String sql = "INSERT INTO " + TABLE_NAME + " (form, formName, state, lastUpdate) VALUES( ?, ?, ?, ?)";
         try (Connection con = createConnection();
              PreparedStatement statement = con.prepareStatement(sql);
         ) {
+            Blob form = con.createBlob();
+            form.setBytes(1, submission.getForm().toByteArray());
+            statement.setBlob(1, form);
+            statement.setString(2, submission.getFormName());
+            statement.setString(3, submission.getState().name());
+            statement.setTimestamp(4, Timestamp.valueOf(submission.getLastUpdate()));
             statement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    synchronized static public List<Submission> queryAll() {
+        String sql = "SELECT * FROM " + TABLE_NAME;
+        LinkedList<Submission> list = new LinkedList<>();
+        try (Connection con = createConnection();
+             PreparedStatement statement = con.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery();
+        ) {
+            while (resultSet.next()) {
+                Submission submission = new Submission();
+                submission.setId(resultSet.getInt("id"));
+                submission.setFormName(resultSet.getString("formName"));
+                submission.setState(Submission.State.valueOf(resultSet.getString("state")));
+                submission.setLastUpdate(resultSet.getTimestamp("lastUpdate").toLocalDateTime());
+                Blob formBlob = resultSet.getBlob("form");
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                outputStream.write(formBlob.getBytes(1, (int) formBlob.length()));
+                submission.setForm(outputStream);
+                list.add(submission);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 
 }

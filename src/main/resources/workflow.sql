@@ -1,7 +1,8 @@
 DROP TABLE workflow IF EXISTS;
 CREATE TABLE workflow(
     id INTEGER IDENTITY PRIMARY KEY,
-    attachment BLOB NOT NULL,
+    form BLOB NOT NULL,
+    formName VARCHAR(30) NOT NULL,
     state VARCHAR(20) NOT NULL,
     lastUpdate TIMESTAMP NOT NULL
 );

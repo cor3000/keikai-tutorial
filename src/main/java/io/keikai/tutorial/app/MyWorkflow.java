@@ -14,6 +14,9 @@ import java.util.*;
  */
 public class MyWorkflow {
     public static final String ROLE_EMPLOYEE = "employee";
+    public static final String BUTTON_SUBMIT = "submit";
+    private static final String BUTTON_APPROVE = "approve";
+    private static final String BUTTON_REJECT = "reject";
     private Spreadsheet spreadsheet;
     private String role;
     private String entryBookName;
@@ -21,7 +24,7 @@ public class MyWorkflow {
     private ByteArrayInputStream entryBookInputStream;
 
     static private String SHEET_LOGIN = "login";
-    static private String SHEET_LIST = "form list";
+    static private String SHEET_FORM = "form list";
     static private String SHEET_SUBMISSION = "submission list";
 
     public MyWorkflow(String keikaiServerAddress) {
@@ -35,23 +38,29 @@ public class MyWorkflow {
                 spreadsheet.close();
             }
         });
+        spreadsheet.addExceptionHandler(throwable -> {
+            System.out.print("Oops! "+ throwable.getMessage());
+            throwable.printStackTrace();
+        });
     }
 
-    private void addLoginListeners() {
+    private void addLoginLogoutListeners() {
         spreadsheet.getWorksheet(SHEET_LOGIN).getButton("login")
                 .addAction((ShapeMouseEvent event) -> {
                     login(spreadsheet.getRange("D2").getValue().toString());
                 });
+        spreadsheet.getWorksheet(SHEET_FORM).getButton("logout").addAction((ShapeMouseEvent) -> {
+            navigateToLoginPage();
+        });
+        spreadsheet.getWorksheet(SHEET_SUBMISSION).getButton("logout").addAction((ShapeMouseEvent) -> {
+            navigateToLoginPage();
+        });
     }
 
-    private void importFormFile(File formFile) {
+    private void showForm(File formFile) {
         try {
             spreadsheet.importAndReplace(formFile.getName(), formFile);
-            spreadsheet.getWorksheet().getButton("submit")
-                    .addAction((ShapeMouseEvent event) -> {
-                        submit();
-                    });
-            showButtonsUponRole();
+            setupButtonsUponRole(spreadsheet.getWorksheet());
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (AbortedException e) {
@@ -59,11 +68,28 @@ public class MyWorkflow {
         }
     }
 
-    private void showButtonsUponRole() {
-        if (role.endsWith(ROLE_EMPLOYEE)) {
-            //TODO show submit only
+
+    private void showForm(Submission s) throws AbortedException {
+        spreadsheet.importAndReplace(s.getFormName(), new ByteArrayInputStream(s.getForm().toByteArray()));
+        setupButtonsUponRole(spreadsheet.getWorksheet());
+    }
+
+    private void setupButtonsUponRole(Worksheet worksheet) {
+        if (role.equals(ROLE_EMPLOYEE)) {
+            worksheet.getButton(BUTTON_SUBMIT).setVisible(true);
+            worksheet.getButton(BUTTON_APPROVE).setVisible(false);
+            worksheet.getButton(BUTTON_REJECT).setVisible(false);
+            worksheet.getButton(BUTTON_SUBMIT)
+                    .addAction((ShapeMouseEvent event) -> {
+                        submit();
+                    });
         } else {
-            //TODO show approve, reject
+            worksheet.getButton(BUTTON_SUBMIT).setVisible(false);
+            worksheet.getButton(BUTTON_APPROVE).setVisible(true);
+            worksheet.getButton(BUTTON_REJECT).setVisible(true);
+            worksheet.getButton(BUTTON_APPROVE).addAction(shapeMouseEvent -> {
+                navigateToMain();
+            });
         }
     }
 
@@ -77,9 +103,12 @@ public class MyWorkflow {
         submission.setForm(outputStream);
         submission.setFormName(spreadsheet.getBookName());
         WorkflowDao.insert(submission);
+        navigateToMain();
+    }
+
+    private void navigateToMain() {
         try {
             spreadsheet.importAndReplace(entryBookName, entryBookInputStream);
-            navigateToSheet(SHEET_LIST);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -93,13 +122,13 @@ public class MyWorkflow {
         this.entryBookName = bookName;
         this.entryFile = xlsxFile;
         spreadsheet.importAndReplace(bookName, xlsxFile);
-        addLoginListeners();
+        addLoginLogoutListeners();
     }
 
     private void login(String role) {
         this.role = role;
         if (role.equals(ROLE_EMPLOYEE)) {
-            navigateToSheet(SHEET_LIST);
+            navigateToSheet(SHEET_FORM);
             showFormList();
             addFormSelectionListener();
         } else { //supervisor
@@ -107,13 +136,6 @@ public class MyWorkflow {
             listSubmission();
         }
         cacheBookState();
-        addLogoutListner();
-    }
-
-    private void addLogoutListner() {
-        spreadsheet.getWorksheet().getButton("logout").addAction((ShapeMouseEvent) -> {
-            navigateToLoginPage();
-        });
     }
 
     private void addFormSelectionListener() {
@@ -121,9 +143,10 @@ public class MyWorkflow {
 
             @Override
             public void onEvent(RangeEvent rangeEvent) throws Exception {
-                if (rangeEvent.getRange().getValue().toString().endsWith(".xlsx")) {
+                if (spreadsheet.getWorksheet().getName().equals(SHEET_FORM)
+                        && rangeEvent.getRange().getValue().toString().endsWith(".xlsx")) {
                     File form = AppContextListener.getFormList().get(rangeEvent.getRow() - 1);
-                    importFormFile(form);
+                    showForm(form);
                     spreadsheet.removeEventListener(Events.ON_CELL_CLICK, this);
                 }
             }
@@ -167,10 +190,14 @@ public class MyWorkflow {
 
             @Override
             public void onEvent(RangeEvent rangeEvent) throws Exception {
-                int id = spreadsheet.getRange(rangeEvent.getRange().getRow(), 0).getRangeValue().getCellValue().getDoubleValue().intValue();
+                if (!rangeEvent.getWorksheet().getName().equals(SHEET_SUBMISSION)) {
+                    return;
+                }
+                Range idCell = spreadsheet.getRange(rangeEvent.getRange().getRow(), 0);
+                int id = idCell.getRangeValue().getCellValue().getDoubleValue().intValue();
                 for (Submission s : submissionList) {
                     if (s.getId() == id) {
-                        spreadsheet.importAndReplace(s.getFormName(), new ByteArrayInputStream(s.getForm().toByteArray()));
+                        showForm(s);
                         break;
                     }
                 }
@@ -192,10 +219,17 @@ public class MyWorkflow {
 
     private void navigateToLoginPage() {
         try {
-            spreadsheet.importAndReplace(entryBookName, entryBookInputStream);
+            if (!spreadsheet.getBookName().equals(entryBookName)) {
+                spreadsheet.importAndReplace(entryBookName, entryBookInputStream);
+                addLoginLogoutListeners();
+            }
             navigateToSheet(SHEET_LOGIN);
         } catch (AbortedException e) {
             e.printStackTrace();
         }
+    }
+
+    private void navigateTo(String bookName, String sheetName){
+
     }
 }

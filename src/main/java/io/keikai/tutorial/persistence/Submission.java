@@ -16,6 +16,7 @@ public class Submission {
     private LocalDateTime lastUpdate = LocalDateTime.now();
     private ByteArrayOutputStream form;
     private String formName;
+    private String owner;
 
     public int getId() {
         return id;
@@ -55,5 +56,13 @@ public class Submission {
 
     public void setFormName(String formName) {
         this.formName = formName;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public void setOwner(String owner) {
+        this.owner = owner;
     }
 }

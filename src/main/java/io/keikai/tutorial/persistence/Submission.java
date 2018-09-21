@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
  */
 public class Submission {
     public enum State{
-        WAITING, APPROVED
+        WAITING, APPROVED, REJECTED
     }
 
     private int id;

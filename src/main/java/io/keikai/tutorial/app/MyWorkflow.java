@@ -1,12 +1,14 @@
 package io.keikai.tutorial.app;
 
 import io.keikai.client.api.*;
+import io.keikai.client.api.ctrl.Button;
 import io.keikai.client.api.event.*;
 import io.keikai.client.api.ui.UiActivity;
 import io.keikai.tutorial.persistence.*;
 import io.keikai.tutorial.web.AppContextListener;
 
 import java.io.*;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -22,6 +24,7 @@ public class MyWorkflow {
     private String entryBookName;
     private File entryFile;
     private ByteArrayInputStream entryBookInputStream;
+    private Submission submissionToReview = null;
 
     static private String SHEET_LOGIN = "login";
     static private String SHEET_FORM = "form list";
@@ -39,16 +42,17 @@ public class MyWorkflow {
             }
         });
         spreadsheet.addExceptionHandler(throwable -> {
-            System.out.print("Oops! "+ throwable.getMessage());
+            String errorMessage = "Oops! " + throwable.getMessage();
+            System.out.print(errorMessage);
+            spreadsheet.getRange("A1").setValue(errorMessage);
             throwable.printStackTrace();
         });
     }
 
     private void addLoginLogoutListeners() {
-        spreadsheet.getWorksheet(SHEET_LOGIN).getButton("login")
-                .addAction((ShapeMouseEvent event) -> {
-                    login(spreadsheet.getRange("D2").getValue().toString());
-                });
+        spreadsheet.getWorksheet(SHEET_LOGIN).getButton("login").addAction((ShapeMouseEvent event) -> {
+            login(spreadsheet.getRange("B4").getValue().toString());
+        });
         spreadsheet.getWorksheet(SHEET_FORM).getButton("logout").addAction((ShapeMouseEvent) -> {
             navigateToLoginPage();
         });
@@ -57,15 +61,9 @@ public class MyWorkflow {
         });
     }
 
-    private void showForm(File formFile) {
-        try {
-            spreadsheet.importAndReplace(formFile.getName(), formFile);
-            setupButtonsUponRole(spreadsheet.getWorksheet());
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (AbortedException e) {
-            e.printStackTrace();
-        }
+    private void showForm(File formFile) throws FileNotFoundException, AbortedException {
+        spreadsheet.importAndReplace(formFile.getName(), formFile);
+        setupButtonsUponRole(spreadsheet.getWorksheet());
     }
 
 
@@ -75,22 +73,31 @@ public class MyWorkflow {
     }
 
     private void setupButtonsUponRole(Worksheet worksheet) {
+        Button submit = worksheet.getButton(BUTTON_SUBMIT);
+        Button approve = worksheet.getButton(BUTTON_APPROVE);
+        Button reject = worksheet.getButton(BUTTON_REJECT);
         if (role.equals(ROLE_EMPLOYEE)) {
-            worksheet.getButton(BUTTON_SUBMIT).setVisible(true);
-            worksheet.getButton(BUTTON_APPROVE).setVisible(false);
-            worksheet.getButton(BUTTON_REJECT).setVisible(false);
-            worksheet.getButton(BUTTON_SUBMIT)
-                    .addAction((ShapeMouseEvent event) -> {
-                        submit();
-                    });
+            submit.setVisible(true);
+            approve.setVisible(false);
+            reject.setVisible(false);
+            submit.addAction((ShapeMouseEvent event) -> {
+                submit();
+            });
         } else {
-            worksheet.getButton(BUTTON_SUBMIT).setVisible(false);
-            worksheet.getButton(BUTTON_APPROVE).setVisible(true);
-            worksheet.getButton(BUTTON_REJECT).setVisible(true);
-            worksheet.getButton(BUTTON_APPROVE).addAction(shapeMouseEvent -> {
+            submit.setVisible(false);
+            approve.setVisible(true);
+            reject.setVisible(true);
+            approve.addAction(shapeMouseEvent -> {
+                approve();
                 navigateToMain();
             });
         }
+    }
+
+    private void approve() {
+        submissionToReview.setLastUpdate(LocalDateTime.now());
+        submissionToReview.setState(Submission.State.APPROVED);
+        WorkflowDao.update(submissionToReview);
     }
 
     /**
@@ -102,6 +109,7 @@ public class MyWorkflow {
         Submission submission = new Submission();
         submission.setForm(outputStream);
         submission.setFormName(spreadsheet.getBookName());
+        submission.setOwner(this.role);
         WorkflowDao.insert(submission);
         navigateToMain();
     }
@@ -145,7 +153,7 @@ public class MyWorkflow {
             public void onEvent(RangeEvent rangeEvent) throws Exception {
                 if (spreadsheet.getWorksheet().getName().equals(SHEET_FORM)
                         && rangeEvent.getRange().getValue().toString().endsWith(".xlsx")) {
-                    File form = AppContextListener.getFormList().get(rangeEvent.getRow() - 1);
+                    File form = AppContextListener.getFormList().get(rangeEvent.getRow() - 2);
                     showForm(form);
                     spreadsheet.removeEventListener(Events.ON_CELL_CLICK, this);
                 }
@@ -155,7 +163,7 @@ public class MyWorkflow {
     }
 
     private void showFormList() {
-        int row = 1;
+        int row = 2;
         for (File file : AppContextListener.getFormList()) {
             spreadsheet.getRange(row, 0).setValue(file.getName());
             row++;
@@ -179,11 +187,12 @@ public class MyWorkflow {
                 iterator.remove();
             }
         }
-        int row = 1;
+        int row = 3;
         for (Submission s : submissionList) {
             spreadsheet.getRange(row, 0).setValue(s.getId());
             spreadsheet.getRange(row, 1).setValue(s.getFormName());
-            spreadsheet.getRange(row, 2).setValue(s.getLastUpdate().toString());
+            spreadsheet.getRange(row, 2).setValue(s.getOwner());
+            spreadsheet.getRange(row, 3).setValue(s.getLastUpdate().toString());
             row++;
         }
         RangeEventListener submissionSelectionListener = new RangeEventListener() {
@@ -197,6 +206,7 @@ public class MyWorkflow {
                 int id = idCell.getRangeValue().getCellValue().getDoubleValue().intValue();
                 for (Submission s : submissionList) {
                     if (s.getId() == id) {
+                        submissionToReview = s;
                         showForm(s);
                         break;
                     }
@@ -229,7 +239,7 @@ public class MyWorkflow {
         }
     }
 
-    private void navigateTo(String bookName, String sheetName){
+    private void navigateTo(String bookName, String sheetName) {
 
     }
 }

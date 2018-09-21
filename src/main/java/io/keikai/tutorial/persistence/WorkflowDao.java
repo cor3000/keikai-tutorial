@@ -48,7 +48,7 @@ public class WorkflowDao {
     }
 
     synchronized static public void insert(Submission submission) {
-        String sql = "INSERT INTO " + TABLE_NAME + " (form, formName, state, lastUpdate) VALUES( ?, ?, ?, ?)";
+        String sql = "INSERT INTO " + TABLE_NAME + " (form, formName, state, lastUpdate, owner) VALUES( ?, ?, ?, ?, ?)";
         try (Connection con = createConnection();
              PreparedStatement statement = con.prepareStatement(sql);
         ) {
@@ -58,6 +58,7 @@ public class WorkflowDao {
             statement.setString(2, submission.getFormName());
             statement.setString(3, submission.getState().name());
             statement.setTimestamp(4, Timestamp.valueOf(submission.getLastUpdate()));
+            statement.setString(5, submission.getOwner());
             statement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -75,6 +76,7 @@ public class WorkflowDao {
                 Submission submission = new Submission();
                 submission.setId(resultSet.getInt("id"));
                 submission.setFormName(resultSet.getString("formName"));
+                submission.setOwner(resultSet.getString("owner"));
                 submission.setState(Submission.State.valueOf(resultSet.getString("state")));
                 submission.setLastUpdate(resultSet.getTimestamp("lastUpdate").toLocalDateTime());
                 Blob formBlob = resultSet.getBlob("form");
@@ -89,4 +91,16 @@ public class WorkflowDao {
         return list;
     }
 
+    public static void update(Submission submission) {
+        String sql = "UPDATE " + TABLE_NAME + " SET state=?, lastUpdate=?";
+        try (Connection con = createConnection();
+             PreparedStatement statement = con.prepareStatement(sql);
+        ) {
+            statement.setString(1, submission.getState().name());
+            statement.setTimestamp(2, Timestamp.valueOf(submission.getLastUpdate()));
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }

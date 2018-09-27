@@ -6,9 +6,11 @@ import io.keikai.client.api.event.*;
 import io.keikai.client.api.ui.UiActivity;
 import io.keikai.tutorial.persistence.*;
 import io.keikai.tutorial.web.AppContextListener;
+import io.keikai.util.DateUtil;
 
 import java.io.*;
-import java.time.LocalDateTime;
+import java.time.*;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 /**
@@ -68,8 +70,10 @@ public class MyWorkflow {
 
 
     private void showForm(Submission s) throws AbortedException {
-        spreadsheet.importAndReplace(s.getFormName(), new ByteArrayInputStream(s.getForm().toByteArray()));
-        setupButtonsUponRole(spreadsheet.getWorksheet());
+        if (s.getState() == Submission.State.WAITING) {
+            spreadsheet.importAndReplace(s.getFormName(), new ByteArrayInputStream(s.getForm().toByteArray()));
+            setupButtonsUponRole(spreadsheet.getWorksheet());
+        }
     }
 
     private void setupButtonsUponRole(Worksheet worksheet) {
@@ -82,6 +86,7 @@ public class MyWorkflow {
             reject.setVisible(false);
             submit.addAction((ShapeMouseEvent event) -> {
                 submit();
+                navigateTo(SHEET_FORM);
             });
         } else {
             submit.setVisible(false);
@@ -89,7 +94,7 @@ public class MyWorkflow {
             reject.setVisible(true);
             approve.addAction(shapeMouseEvent -> {
                 approve();
-                navigateToMain();
+                navigateTo(SHEET_SUBMISSION);
             });
         }
     }
@@ -111,15 +116,6 @@ public class MyWorkflow {
         submission.setFormName(spreadsheet.getBookName());
         submission.setOwner(this.role);
         WorkflowDao.insert(submission);
-        navigateToMain();
-    }
-
-    private void navigateToMain() {
-        try {
-            spreadsheet.importAndReplace(entryBookName, entryBookInputStream);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     public String getJavaScriptURI(String elementId) {
@@ -143,7 +139,6 @@ public class MyWorkflow {
             navigateToSheet(SHEET_SUBMISSION);
             listSubmission();
         }
-        cacheBookState();
     }
 
     private void addFormSelectionListener() {
@@ -170,29 +165,18 @@ public class MyWorkflow {
         }
     }
 
-    private void cacheBookState() {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        spreadsheet.export(spreadsheet.getBookName(), outputStream);
-        this.entryBookInputStream = new ByteArrayInputStream(outputStream.toByteArray());
-    }
-
     /**
      * show waiting submissions
      */
     private void listSubmission() {
         List<Submission> submissionList = WorkflowDao.queryAll();
-        for (Iterator<Submission> iterator = submissionList.iterator(); iterator.hasNext(); ) {
-            Submission s = iterator.next();
-            if (s.getState() != Submission.State.WAITING) {
-                iterator.remove();
-            }
-        }
         int row = 3;
         for (Submission s : submissionList) {
             spreadsheet.getRange(row, 0).setValue(s.getId());
             spreadsheet.getRange(row, 1).setValue(s.getFormName());
             spreadsheet.getRange(row, 2).setValue(s.getOwner());
-            spreadsheet.getRange(row, 3).setValue(s.getLastUpdate().toString());
+            spreadsheet.getRange(row, 3).setValue(s.getState());
+            spreadsheet.getRange(row, 4).setValue(DateUtil.getExcelDate(Date.from(s.getLastUpdate().atZone(ZoneId.systemDefault()).toInstant())));
             row++;
         }
         RangeEventListener submissionSelectionListener = new RangeEventListener() {
@@ -222,9 +206,11 @@ public class MyWorkflow {
      * @param targetSheetName
      */
     private void navigateToSheet(String targetSheetName) {
-        spreadsheet.getWorksheet(targetSheetName).setVisible(Worksheet.Visibility.Visible);
-        spreadsheet.getWorksheet().setVisible(Worksheet.Visibility.Hidden);
-        spreadsheet.setActiveWorksheet(targetSheetName);
+        if (!spreadsheet.getWorksheet().getName().equals(targetSheetName)) {
+            spreadsheet.getWorksheet(targetSheetName).setVisible(Worksheet.Visibility.Visible);
+            spreadsheet.getWorksheet().setVisible(Worksheet.Visibility.Hidden);
+            spreadsheet.setActiveWorksheet(targetSheetName);
+        }
     }
 
     private void navigateToLoginPage() {
@@ -239,7 +225,19 @@ public class MyWorkflow {
         }
     }
 
-    private void navigateTo(String bookName, String sheetName) {
+    private void navigateTo(String sheetName) {
+        if (spreadsheet.getBookName().equals(entryBookName)) {
+            navigateToSheet(sheetName);
+        } else {
+            try {
+                spreadsheet.importAndReplace(entryBookName, entryFile);
+                login(this.role);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (AbortedException e) {
+                e.printStackTrace();
+            }
+        }
 
     }
 }

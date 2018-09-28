@@ -7,6 +7,7 @@ import io.keikai.client.api.ui.UiActivity;
 import io.keikai.tutorial.persistence.*;
 import io.keikai.tutorial.web.AppContextListener;
 import io.keikai.util.DateUtil;
+import org.slf4j.*;
 
 import java.io.*;
 import java.time.*;
@@ -17,6 +18,8 @@ import java.util.*;
  * implement the application logic
  */
 public class MyWorkflow {
+    private static final Logger logger = LoggerFactory.getLogger(MyWorkflow.class);
+
     public static final String ROLE_EMPLOYEE = "employee";
     public static final String BUTTON_SUBMIT = "submit";
     private static final String BUTTON_APPROVE = "approve";
@@ -44,15 +47,13 @@ public class MyWorkflow {
             }
         });
         spreadsheet.addExceptionHandler(throwable -> {
-            String errorMessage = "Oops! " + throwable.getMessage();
-            System.out.print(errorMessage);
-            spreadsheet.getRange("A1").setValue(errorMessage);
-            throwable.printStackTrace();
+            logger.error("Oops! something wrong in Spreadsheet", throwable);
+            spreadsheet.getRange("A1").setValue(throwable.getMessage());
         });
     }
 
     private void addLoginLogoutListeners() {
-        spreadsheet.getWorksheet(SHEET_LOGIN).getButton("login").addAction((ShapeMouseEvent event) -> {
+        spreadsheet.getWorksheet(SHEET_LOGIN).getButton("login").addAction((ShapeMouseEvent) -> {
             login(spreadsheet.getRange("B4").getValue().toString());
         });
         spreadsheet.getWorksheet(SHEET_FORM).getButton("logout").addAction((ShapeMouseEvent) -> {
@@ -84,7 +85,7 @@ public class MyWorkflow {
             submit.setVisible(true);
             approve.setVisible(false);
             reject.setVisible(false);
-            submit.addAction((ShapeMouseEvent event) -> {
+            submit.addAction((ShapeMouseEvent) -> {
                 submit();
                 navigateTo(SHEET_FORM);
             });

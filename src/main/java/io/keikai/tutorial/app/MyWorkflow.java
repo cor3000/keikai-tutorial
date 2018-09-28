@@ -3,7 +3,7 @@ package io.keikai.tutorial.app;
 import io.keikai.client.api.*;
 import io.keikai.client.api.ctrl.Button;
 import io.keikai.client.api.event.*;
-import io.keikai.client.api.ui.UiActivity;
+import io.keikai.client.api.ui.*;
 import io.keikai.tutorial.persistence.*;
 import io.keikai.tutorial.web.AppContextListener;
 import io.keikai.util.DateUtil;
@@ -54,7 +54,7 @@ public class MyWorkflow {
 
     private void addLoginLogoutListeners() {
         spreadsheet.getWorksheet(SHEET_LOGIN).getButton("login").addAction((ShapeMouseEvent) -> {
-            login(spreadsheet.getRange("B4").getValue().toString());
+            login(spreadsheet.getRange("D6").getValue().toString());
         });
         spreadsheet.getWorksheet(SHEET_FORM).getButton("logout").addAction((ShapeMouseEvent) -> {
             navigateToLoginPage();
@@ -128,6 +128,17 @@ public class MyWorkflow {
         this.entryFile = xlsxFile;
         spreadsheet.importAndReplace(bookName, xlsxFile);
         addLoginLogoutListeners();
+        disableSheetOperations();
+    }
+
+    private void disableSheetOperations() {
+        spreadsheet.setUserActionEnabled(AuxAction.ADD_SHEET ,false);
+        spreadsheet.setUserActionEnabled(AuxAction.COPY_SHEET, false);
+        spreadsheet.setUserActionEnabled(AuxAction.DELETE_SHEET, false);
+        spreadsheet.setUserActionEnabled(AuxAction.RENAME_SHEET, false);
+        spreadsheet.setUserActionEnabled(AuxAction.HIDE_SHEET, false);
+        spreadsheet.setUserActionEnabled(AuxAction.UNHIDE_SHEET, false);
+        spreadsheet.setUserActionEnabled(AuxAction.PROTECT_SHEET, false);
     }
 
     private void login(String role) {

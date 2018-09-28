@@ -11,7 +11,6 @@ import org.slf4j.*;
 
 import java.io.*;
 import java.time.*;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 /**
@@ -28,12 +27,14 @@ public class MyWorkflow {
     private String role;
     private String entryBookName;
     private File entryFile;
-    private ByteArrayInputStream entryBookInputStream;
     private Submission submissionToReview = null;
 
     static private String SHEET_LOGIN = "login";
     static private String SHEET_FORM = "form list";
     static private String SHEET_SUBMISSION = "submission list";
+
+    public static final int STARTING_COLUMN = 1;
+    public static final String ROLE_CELL = "D6";
 
     public MyWorkflow(String keikaiServerAddress) {
         spreadsheet = Keikai.newClient(keikaiServerAddress);
@@ -54,13 +55,13 @@ public class MyWorkflow {
 
     private void addLoginLogoutListeners() {
         spreadsheet.getWorksheet(SHEET_LOGIN).getButton("login").addAction((ShapeMouseEvent) -> {
-            login(spreadsheet.getRange("D6").getValue().toString());
+            login(spreadsheet.getRange(ROLE_CELL).getValue().toString());
         });
         spreadsheet.getWorksheet(SHEET_FORM).getButton("logout").addAction((ShapeMouseEvent) -> {
-            navigateToLoginPage();
+            navigateTo(SHEET_LOGIN);
         });
         spreadsheet.getWorksheet(SHEET_SUBMISSION).getButton("logout").addAction((ShapeMouseEvent) -> {
-            navigateToLoginPage();
+            navigateTo(SHEET_LOGIN);
         });
     }
 
@@ -172,7 +173,7 @@ public class MyWorkflow {
     private void showFormList() {
         int row = 2;
         for (File file : AppContextListener.getFormList()) {
-            spreadsheet.getRange(row, 0).setValue(file.getName());
+            spreadsheet.getRange(row, STARTING_COLUMN).setValue(file.getName());
             row++;
         }
     }
@@ -184,11 +185,11 @@ public class MyWorkflow {
         List<Submission> submissionList = WorkflowDao.queryAll();
         int row = 3;
         for (Submission s : submissionList) {
-            spreadsheet.getRange(row, 0).setValue(s.getId());
-            spreadsheet.getRange(row, 1).setValue(s.getFormName());
-            spreadsheet.getRange(row, 2).setValue(s.getOwner());
-            spreadsheet.getRange(row, 3).setValue(s.getState());
-            spreadsheet.getRange(row, 4).setValue(DateUtil.getExcelDate(Date.from(s.getLastUpdate().atZone(ZoneId.systemDefault()).toInstant())));
+            spreadsheet.getRange(row, STARTING_COLUMN).setValue(s.getId());
+            spreadsheet.getRange(row, STARTING_COLUMN + 1).setValue(s.getFormName());
+            spreadsheet.getRange(row, STARTING_COLUMN + 2).setValue(s.getOwner());
+            spreadsheet.getRange(row, STARTING_COLUMN + 3).setValue(s.getState());
+            spreadsheet.getRange(row, STARTING_COLUMN + 4).setValue(DateUtil.getExcelDate(Date.from(s.getLastUpdate().atZone(ZoneId.systemDefault()).toInstant())));
             row++;
         }
         RangeEventListener submissionSelectionListener = new RangeEventListener() {
@@ -198,7 +199,7 @@ public class MyWorkflow {
                 if (!rangeEvent.getWorksheet().getName().equals(SHEET_SUBMISSION)) {
                     return;
                 }
-                Range idCell = spreadsheet.getRange(rangeEvent.getRange().getRow(), 0);
+                Range idCell = spreadsheet.getRange(rangeEvent.getRange().getRow(), STARTING_COLUMN);
                 int id = idCell.getRangeValue().getCellValue().getDoubleValue().intValue();
                 for (Submission s : submissionList) {
                     if (s.getId() == id) {
@@ -222,18 +223,6 @@ public class MyWorkflow {
             spreadsheet.getWorksheet(targetSheetName).setVisible(Worksheet.Visibility.Visible);
             spreadsheet.getWorksheet().setVisible(Worksheet.Visibility.Hidden);
             spreadsheet.setActiveWorksheet(targetSheetName);
-        }
-    }
-
-    private void navigateToLoginPage() {
-        try {
-            if (!spreadsheet.getBookName().equals(entryBookName)) {
-                spreadsheet.importAndReplace(entryBookName, entryBookInputStream);
-                addLoginLogoutListeners();
-            }
-            navigateToSheet(SHEET_LOGIN);
-        } catch (AbortedException e) {
-            e.printStackTrace();
         }
     }
 

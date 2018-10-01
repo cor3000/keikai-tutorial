@@ -66,6 +66,7 @@ public class MyWorkflow {
     }
 
     private void showForm(File formFile) throws FileNotFoundException, AbortedException {
+        spreadsheet.clearEventListeners();
         spreadsheet.importAndReplace(formFile.getName(), formFile);
         setupButtonsUponRole(spreadsheet.getWorksheet());
     }
@@ -98,7 +99,17 @@ public class MyWorkflow {
                 approve();
                 navigateTo(SHEET_SUBMISSION);
             });
+            reject.addAction(buttonShapeMouseEvent -> {
+                reject();
+                navigateTo(SHEET_SUBMISSION);
+            });
         }
+    }
+
+    private void reject() {
+        submissionToReview.setLastUpdate(LocalDateTime.now());
+        submissionToReview.setState(Submission.State.REJECTED);
+        WorkflowDao.update(submissionToReview);
     }
 
     private void approve() {
@@ -134,6 +145,7 @@ public class MyWorkflow {
 
     private void disableSheetOperations() {
         spreadsheet.setUserActionEnabled(AuxAction.ADD_SHEET ,false);
+        spreadsheet.setUserActionEnabled(AuxAction.MOVE_SHEET ,false);
         spreadsheet.setUserActionEnabled(AuxAction.COPY_SHEET, false);
         spreadsheet.setUserActionEnabled(AuxAction.DELETE_SHEET, false);
         spreadsheet.setUserActionEnabled(AuxAction.RENAME_SHEET, false);
@@ -148,9 +160,11 @@ public class MyWorkflow {
             navigateToSheet(SHEET_FORM);
             showFormList();
             addFormSelectionListener();
+            spreadsheet.getWorksheet().protect("", true, true, false, false, false, false, false, false, false, false, false, false, false, false, false);
         } else { //supervisor
             navigateToSheet(SHEET_SUBMISSION);
             listSubmission();
+            spreadsheet.getWorksheet().protect("", true, true, false, false, false, false, false, false, false, false, false, false, true, true, false);
         }
     }
 
@@ -229,9 +243,9 @@ public class MyWorkflow {
     private void navigateTo(String sheetName) {
         if (spreadsheet.getBookName().equals(entryBookName)) {
             navigateToSheet(sheetName);
-        } else {
+        } else { //import entry book
             try {
-                spreadsheet.importAndReplace(entryBookName, entryFile);
+                init(entryBookName, entryFile);
                 login(this.role);
             } catch (FileNotFoundException e) {
                 e.printStackTrace();

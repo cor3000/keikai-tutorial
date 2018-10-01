@@ -92,12 +92,13 @@ public class WorkflowDao {
     }
 
     public static void update(Submission submission) {
-        String sql = "UPDATE " + TABLE_NAME + " SET state=?, lastUpdate=?";
+        String sql = "UPDATE " + TABLE_NAME + " SET state=?, lastUpdate=? WHERE id=?";
         try (Connection con = createConnection();
              PreparedStatement statement = con.prepareStatement(sql);
         ) {
             statement.setString(1, submission.getState().name());
             statement.setTimestamp(2, Timestamp.valueOf(submission.getLastUpdate()));
+            statement.setInt(3, submission.getId());
             statement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();

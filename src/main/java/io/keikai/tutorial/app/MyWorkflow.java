@@ -1,5 +1,6 @@
 package io.keikai.tutorial.app;
 
+import com.sun.corba.se.spi.orbutil.threadpool.Work;
 import io.keikai.client.api.*;
 import io.keikai.client.api.ctrl.Button;
 import io.keikai.client.api.event.*;
@@ -53,15 +54,28 @@ public class MyWorkflow {
         });
     }
 
+    public String getJavaScriptURI(String elementId) {
+        return spreadsheet.getURI(elementId);
+    }
+
+    public void init(String bookName, File xlsxFile) throws FileNotFoundException, AbortedException {
+        spreadsheet.clearEventListeners();
+        this.entryBookName = bookName;
+        this.entryFile = xlsxFile;
+        spreadsheet.importAndReplace(bookName, xlsxFile);
+        addLoginLogoutListeners();
+        disableSheetOperations();
+    }
+
     private void addLoginLogoutListeners() {
         spreadsheet.getWorksheet(SHEET_LOGIN).getButton("login").addAction((ShapeMouseEvent) -> {
             login(spreadsheet.getRange(ROLE_CELL).getValue().toString());
         });
         spreadsheet.getWorksheet(SHEET_FORM).getButton("logout").addAction((ShapeMouseEvent) -> {
-            navigateTo(SHEET_LOGIN);
+            logout();
         });
         spreadsheet.getWorksheet(SHEET_SUBMISSION).getButton("logout").addAction((ShapeMouseEvent) -> {
-            navigateTo(SHEET_LOGIN);
+            logout();
         });
     }
 
@@ -74,6 +88,7 @@ public class MyWorkflow {
 
     private void showForm(Submission s) throws AbortedException {
         if (s.getState() == Submission.State.WAITING) {
+            spreadsheet.clearEventListeners();
             spreadsheet.importAndReplace(s.getFormName(), new ByteArrayInputStream(s.getForm().toByteArray()));
             setupButtonsUponRole(spreadsheet.getWorksheet());
         }
@@ -87,7 +102,7 @@ public class MyWorkflow {
             submit.setVisible(true);
             approve.setVisible(false);
             reject.setVisible(false);
-            submit.addAction((ShapeMouseEvent) -> {
+            submit.addAction((ShapeMouseEvent<Button> event) -> {
                 submit();
                 navigateTo(SHEET_FORM);
             });
@@ -110,12 +125,14 @@ public class MyWorkflow {
         submissionToReview.setLastUpdate(LocalDateTime.now());
         submissionToReview.setState(Submission.State.REJECTED);
         WorkflowDao.update(submissionToReview);
+        submissionToReview = null;
     }
 
     private void approve() {
         submissionToReview.setLastUpdate(LocalDateTime.now());
         submissionToReview.setState(Submission.State.APPROVED);
         WorkflowDao.update(submissionToReview);
+        submissionToReview = null;
     }
 
     /**
@@ -131,21 +148,9 @@ public class MyWorkflow {
         WorkflowDao.insert(submission);
     }
 
-    public String getJavaScriptURI(String elementId) {
-        return spreadsheet.getURI(elementId);
-    }
-
-    public void init(String bookName, File xlsxFile) throws FileNotFoundException, AbortedException {
-        this.entryBookName = bookName;
-        this.entryFile = xlsxFile;
-        spreadsheet.importAndReplace(bookName, xlsxFile);
-        addLoginLogoutListeners();
-        disableSheetOperations();
-    }
-
     private void disableSheetOperations() {
-        spreadsheet.setUserActionEnabled(AuxAction.ADD_SHEET ,false);
-        spreadsheet.setUserActionEnabled(AuxAction.MOVE_SHEET ,false);
+        spreadsheet.setUserActionEnabled(AuxAction.ADD_SHEET, false);
+        spreadsheet.setUserActionEnabled(AuxAction.MOVE_SHEET, false);
         spreadsheet.setUserActionEnabled(AuxAction.COPY_SHEET, false);
         spreadsheet.setUserActionEnabled(AuxAction.DELETE_SHEET, false);
         spreadsheet.setUserActionEnabled(AuxAction.RENAME_SHEET, false);
@@ -156,16 +161,23 @@ public class MyWorkflow {
 
     private void login(String role) {
         this.role = role;
+        Worksheet sheet = null;
         if (role.equals(ROLE_EMPLOYEE)) {
-            navigateToSheet(SHEET_FORM);
+            sheet = navigateToSheet(SHEET_FORM);
             showFormList();
             addFormSelectionListener();
-            spreadsheet.getWorksheet().protect("", true, true, false, false, false, false, false, false, false, false, false, false, false, false, false);
+//            sheet.protect("", true, true, false, false, false, false, false, false, false, false, false, false, false, false, false);
         } else { //supervisor
-            navigateToSheet(SHEET_SUBMISSION);
+            sheet = navigateToSheet(SHEET_SUBMISSION);
             listSubmission();
-            spreadsheet.getWorksheet().protect("", true, true, false, false, false, false, false, false, false, false, false, false, true, true, false);
+            //allow filter and sorting
+//            sheet.protect("", true, true, false, false, false, false, false, false, false, false, false, false, true, true, false);
         }
+    }
+
+    private void logout() {
+        role = null;
+        navigateTo(SHEET_LOGIN);
     }
 
     private void addFormSelectionListener() {
@@ -192,9 +204,6 @@ public class MyWorkflow {
         }
     }
 
-    /**
-     * show waiting submissions
-     */
     private void listSubmission() {
         List<Submission> submissionList = WorkflowDao.queryAll();
         int row = 3;
@@ -232,14 +241,21 @@ public class MyWorkflow {
      *
      * @param targetSheetName
      */
-    private void navigateToSheet(String targetSheetName) {
-        if (!spreadsheet.getWorksheet().getName().equals(targetSheetName)) {
-            spreadsheet.getWorksheet(targetSheetName).setVisible(Worksheet.Visibility.Visible);
-            spreadsheet.getWorksheet().setVisible(Worksheet.Visibility.Hidden);
+    private Worksheet navigateToSheet(String targetSheetName) {
+        Worksheet currentSheet = spreadsheet.getWorksheet();
+        Worksheet targetSheet = currentSheet;
+        if (!currentSheet.getName().equals(targetSheetName)) {
+            targetSheet = spreadsheet.getWorksheet(targetSheetName);
+            targetSheet.setVisible(Worksheet.Visibility.Visible);
+            currentSheet.setVisible(Worksheet.Visibility.Hidden);
             spreadsheet.setActiveWorksheet(targetSheetName);
         }
+        return targetSheet;
     }
 
+    /**
+     * show the target sheet, if it's necessary, import the corresponding file.
+     */
     private void navigateTo(String sheetName) {
         if (spreadsheet.getBookName().equals(entryBookName)) {
             navigateToSheet(sheetName);

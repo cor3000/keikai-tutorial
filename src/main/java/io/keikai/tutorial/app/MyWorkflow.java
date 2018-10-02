@@ -19,22 +19,26 @@ import java.util.*;
 public class MyWorkflow {
     private static final Logger logger = LoggerFactory.getLogger(MyWorkflow.class);
 
-    public static final String ROLE_EMPLOYEE = "employee";
-    public static final String BUTTON_SUBMIT = "submit";
-    private static final String BUTTON_APPROVE = "approve";
-    private static final String BUTTON_REJECT = "reject";
+    static private final String ROLE_EMPLOYEE = "employee";
+
+    static private final String BUTTON_SUBMIT = "submit";
+    static private final String BUTTON_CANCEL = "cancel";
+    static private final String BUTTON_APPROVE = "approve";
+    static private final String BUTTON_REJECT = "reject";
+
+    static private String SHEET_LOGIN = "login";
+    static private String SHEET_FORM = "form list";
+    static private String SHEET_SUBMISSION = "submission list";
+
+    static private final int STARTING_COLUMN = 1;
+    static private final String ROLE_CELL = "D6";
+
     private Spreadsheet spreadsheet;
     private String role;
     private String entryBookName;
     private File entryFile;
     private Submission submissionToReview = null;
 
-    static private String SHEET_LOGIN = "login";
-    static private String SHEET_FORM = "form list";
-    static private String SHEET_SUBMISSION = "submission list";
-
-    public static final int STARTING_COLUMN = 1;
-    public static final String ROLE_CELL = "D6";
 
     public MyWorkflow(String keikaiServerAddress) {
         spreadsheet = Keikai.newClient(keikaiServerAddress);
@@ -95,18 +99,24 @@ public class MyWorkflow {
 
     private void setupButtonsUponRole(Worksheet worksheet) {
         Button submit = worksheet.getButton(BUTTON_SUBMIT);
+        Button cancel = worksheet.getButton(BUTTON_CANCEL);
         Button approve = worksheet.getButton(BUTTON_APPROVE);
         Button reject = worksheet.getButton(BUTTON_REJECT);
         if (role.equals(ROLE_EMPLOYEE)) {
             submit.setVisible(true);
+            cancel.setVisible(true);
             approve.setVisible(false);
             reject.setVisible(false);
+            cancel.addAction(buttonShapeMouseEvent -> {
+                navigateTo(SHEET_FORM);
+            });
             submit.addAction((ShapeMouseEvent<Button> event) -> {
                 submit();
                 navigateTo(SHEET_FORM);
             });
         } else {
             submit.setVisible(false);
+            cancel.setVisible(false);
             approve.setVisible(true);
             reject.setVisible(true);
             approve.addAction(shapeMouseEvent -> {

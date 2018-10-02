@@ -1,6 +1,5 @@
 package io.keikai.tutorial.app;
 
-import com.sun.corba.se.spi.orbutil.threadpool.Work;
 import io.keikai.client.api.*;
 import io.keikai.client.api.ctrl.Button;
 import io.keikai.client.api.event.*;
@@ -164,14 +163,20 @@ public class MyWorkflow {
         Worksheet sheet = null;
         if (role.equals(ROLE_EMPLOYEE)) {
             sheet = navigateToSheet(SHEET_FORM);
+            if (sheet.isProtected()){
+                sheet.unprotect("");
+            }
             showFormList();
             addFormSelectionListener();
-//            sheet.protect("", true, true, false, false, false, false, false, false, false, false, false, false, false, false, false);
+            sheet.protect("", true, true, false, true, false, false, false, false, false, false, false, false, false, false, false);
         } else { //supervisor
             sheet = navigateToSheet(SHEET_SUBMISSION);
+            if (sheet.isProtected()){
+                sheet.unprotect("");
+            }
             listSubmission();
             //allow filter and sorting
-//            sheet.protect("", true, true, false, false, false, false, false, false, false, false, false, false, true, true, false);
+            sheet.protect("", true, true, false, false, false, false, false, false, false, false, false, false, true, true, false);
         }
     }
 

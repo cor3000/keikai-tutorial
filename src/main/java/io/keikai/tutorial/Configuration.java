@@ -6,8 +6,14 @@ import java.util.logging.*;
 public class Configuration {
     public static final String DEFAULT_KEIKAI_SERVER = "http://localhost:8888";
     public static final String INTERNAL_FILE_FOLDER = "book";
-    public static final String SPREADSHEETS = "spreadsheetList";
     public static final String KEIKAI_JS = "keikaiJs";
+
+    /**
+     * http://hsqldb.org/doc/guide/dbproperties-chapt.html
+     * shutdown=true, Automatic Shutdown, shut down the database when the last connection is closed
+     */
+    public static final String HSQLDB_CONNECTION_STRING = "jdbc:hsqldb:file:database/tutorial;shutdown=true";
+    public static final String JDBC_DRIVER = "org.hsqldb.jdbc.JDBCDriver";
 
 
     static public void enableSocketIOLog() {

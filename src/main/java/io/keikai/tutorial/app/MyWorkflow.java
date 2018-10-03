@@ -15,6 +15,7 @@ import java.util.*;
 
 /**
  * implement the workflow logic
+ * @author Hawk Chen
  */
 public class MyWorkflow {
     private static final Logger logger = LoggerFactory.getLogger(MyWorkflow.class);

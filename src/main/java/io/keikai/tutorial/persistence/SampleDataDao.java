@@ -1,5 +1,6 @@
 package io.keikai.tutorial.persistence;
 
+import io.keikai.tutorial.Configuration;
 import org.hsqldb.cmdline.*;
 
 import java.io.*;
@@ -11,16 +12,11 @@ import java.util.*;
  * Create adn close a connection for every query.
  */
 public class SampleDataDao {
-    /**
-     * http://hsqldb.org/doc/guide/dbproperties-chapt.html
-     * shutdown=true, Automatic Shutdown, shut down the database when the last connection is closed
-     */
-    public static final String HSQLDB_CONNECTION_STRING = "jdbc:hsqldb:file:database/tutorial;shutdown=true";
-    static String TABLE_NAME = "tutorial";
+    static final String TABLE_NAME = "tutorial";
 
     static public void initDatabase() {
         try {
-            Class.forName("org.hsqldb.jdbc.JDBCDriver");
+            Class.forName(Configuration.JDBC_DRIVER);
             try (Connection con = createConnection();) {
                 executeSqlFile(con);
                 System.out.println("-> initialized a table " + TABLE_NAME);
@@ -32,7 +28,7 @@ public class SampleDataDao {
 
     static Connection createConnection() {
         try {
-            return DriverManager.getConnection(HSQLDB_CONNECTION_STRING, "SA", "");
+            return DriverManager.getConnection(Configuration.HSQLDB_CONNECTION_STRING, "SA", "");
         } catch (SQLException e) {
             e.printStackTrace();
         }

@@ -1,7 +1,9 @@
 package io.keikai.tutorial.persistence;
 
 import io.keikai.tutorial.Configuration;
+import io.keikai.tutorial.app.MyWorkflow;
 import org.hsqldb.cmdline.*;
+import org.slf4j.*;
 
 import java.io.*;
 import java.net.URISyntaxException;
@@ -12,6 +14,7 @@ import java.util.*;
  * Create adn close a connection for every query.
  */
 public class SampleDataDao {
+    private static final Logger logger = LoggerFactory.getLogger(SampleDataDao.class);
     static final String TABLE_NAME = "tutorial";
 
     static public void initDatabase() {
@@ -19,7 +22,7 @@ public class SampleDataDao {
             Class.forName(Configuration.JDBC_DRIVER);
             try (Connection con = createConnection();) {
                 executeSqlFile(con);
-                System.out.println("-> initialized a table " + TABLE_NAME);
+                logger.info("-> initialized a table " + TABLE_NAME);
             }
         } catch (Exception e) {
             e.printStackTrace();

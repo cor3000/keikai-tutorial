@@ -2,6 +2,7 @@ package io.keikai.tutorial.persistence;
 
 import io.keikai.tutorial.Configuration;
 import org.hsqldb.cmdline.*;
+import org.slf4j.*;
 
 import java.io.*;
 import java.net.URISyntaxException;
@@ -12,6 +13,7 @@ import java.util.*;
  * Create adn close a connection for every query.
  */
 public class WorkflowDao {
+    private static final Logger logger = LoggerFactory.getLogger(WorkflowDao.class);
     static final String TABLE_NAME = "workflow";
 
     static public void initDatabase() {
@@ -19,7 +21,7 @@ public class WorkflowDao {
             Class.forName(Configuration.JDBC_DRIVER);
             try (Connection con = createConnection();) {
                 initializeTable(con);
-                System.out.println("-> initialized table " + TABLE_NAME);
+                logger.info("-> initialized table " + TABLE_NAME);
             }
         } catch (Exception e) {
             e.printStackTrace();

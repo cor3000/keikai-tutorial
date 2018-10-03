@@ -27,7 +27,7 @@ public class MyWorkflow {
     static private final String BUTTON_APPROVE = "approve";
     static private final String BUTTON_REJECT = "reject";
 
-    static private String SHEET_LOGIN = "login";
+    static private String SHEET_MAIN = "main";
     static private String SHEET_FORM = "form list";
     static private String SHEET_SUBMISSION = "submission list";
 
@@ -67,19 +67,19 @@ public class MyWorkflow {
         this.entryBookName = bookName;
         this.entryFile = xlsxFile;
         spreadsheet.importAndReplace(bookName, xlsxFile);
-        addLoginLogoutListeners();
+        addEnterLeaveListeners();
         disableSheetOperations();
     }
 
-    private void addLoginLogoutListeners() {
-        spreadsheet.getWorksheet(SHEET_LOGIN).getButton("login").addAction((ShapeMouseEvent) -> {
-            login(spreadsheet.getRange(ROLE_CELL).getValue().toString());
+    private void addEnterLeaveListeners() {
+        spreadsheet.getWorksheet(SHEET_MAIN).getButton("enter").addAction((ShapeMouseEvent) -> {
+            enter(spreadsheet.getRange(ROLE_CELL).getValue().toString());
         });
-        spreadsheet.getWorksheet(SHEET_FORM).getButton("logout").addAction((ShapeMouseEvent) -> {
-            logout();
+        spreadsheet.getWorksheet(SHEET_FORM).getButton("leave").addAction((ShapeMouseEvent) -> {
+            leave();
         });
-        spreadsheet.getWorksheet(SHEET_SUBMISSION).getButton("logout").addAction((ShapeMouseEvent) -> {
-            logout();
+        spreadsheet.getWorksheet(SHEET_SUBMISSION).getButton("leave").addAction((ShapeMouseEvent) -> {
+            leave();
         });
     }
 
@@ -169,7 +169,7 @@ public class MyWorkflow {
         spreadsheet.setUserActionEnabled(AuxAction.PROTECT_SHEET, false);
     }
 
-    private void login(String role) {
+    private void enter(String role) {
         this.role = role;
         Worksheet sheet = null;
         if (role.equals(ROLE_EMPLOYEE)) {
@@ -191,9 +191,9 @@ public class MyWorkflow {
         }
     }
 
-    private void logout() {
+    private void leave() {
         role = null;
-        navigateTo(SHEET_LOGIN);
+        navigateTo(SHEET_MAIN);
     }
 
     private void addFormSelectionListener() {
@@ -269,7 +269,7 @@ public class MyWorkflow {
         } else { //import entry book
             try {
                 init(entryBookName, entryFile);
-                login(this.role);
+                enter(this.role);
                 targetSheet = spreadsheet.getWorksheet();
             } catch (FileNotFoundException e) {
                 e.printStackTrace();

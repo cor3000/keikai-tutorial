@@ -14,7 +14,7 @@ import java.time.*;
 import java.util.*;
 
 /**
- * implement the application logic
+ * implement the workflow logic
  */
 public class MyWorkflow {
     private static final Logger logger = LoggerFactory.getLogger(MyWorkflow.class);
@@ -172,21 +172,21 @@ public class MyWorkflow {
         this.role = role;
         Worksheet sheet = null;
         if (role.equals(ROLE_EMPLOYEE)) {
-            sheet = navigateToSheet(SHEET_FORM);
-            if (sheet.isProtected()){
+            sheet = navigateTo(SHEET_FORM);
+            if (sheet.isProtected()) {
                 sheet.unprotect("");
             }
             showFormList();
             addFormSelectionListener();
             sheet.protect("", false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true);
         } else { //supervisor
-            sheet = navigateToSheet(SHEET_SUBMISSION);
-            if (sheet.isProtected()){
+            sheet = navigateTo(SHEET_SUBMISSION);
+            if (sheet.isProtected()) {
                 sheet.unprotect("");
             }
-            listSubmission();
+            showSubmissionList();
             //allow filter and sorting
-            sheet.protect("", false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true);
+            sheet.protect("", false, false, false, false, false, false, false, false, false, false, false, true, true, false, true, true);
         }
     }
 
@@ -219,7 +219,7 @@ public class MyWorkflow {
         }
     }
 
-    private void listSubmission() {
+    private void showSubmissionList() {
         List<Submission> submissionList = WorkflowDao.queryAll();
         int row = 3;
         for (Submission s : submissionList) {
@@ -252,38 +252,31 @@ public class MyWorkflow {
     }
 
     /**
-     * show the target sheet and hide others
-     *
-     * @param targetSheetName
-     */
-    private Worksheet navigateToSheet(String targetSheetName) {
-        Worksheet currentSheet = spreadsheet.getWorksheet();
-        Worksheet targetSheet = currentSheet;
-        if (!currentSheet.getName().equals(targetSheetName)) {
-            targetSheet = spreadsheet.getWorksheet(targetSheetName);
-            targetSheet.setVisible(Worksheet.Visibility.Visible);
-            currentSheet.setVisible(Worksheet.Visibility.Hidden);
-            spreadsheet.setActiveWorksheet(targetSheetName);
-        }
-        return targetSheet;
-    }
-
-    /**
      * show the target sheet, if it's necessary, import the corresponding file.
      */
-    private void navigateTo(String sheetName) {
+    private Worksheet navigateTo(String sheetName) {
+        Worksheet targetSheet = null;
         if (spreadsheet.getBookName().equals(entryBookName)) {
-            navigateToSheet(sheetName);
+            Worksheet currentSheet = spreadsheet.getWorksheet();
+            targetSheet = currentSheet;
+            if (!currentSheet.getName().equals(sheetName)) {
+                targetSheet = spreadsheet.getWorksheet(sheetName);
+                targetSheet.setVisible(Worksheet.Visibility.Visible);
+                currentSheet.setVisible(Worksheet.Visibility.Hidden);
+                spreadsheet.setActiveWorksheet(sheetName);
+            }
         } else { //import entry book
             try {
                 init(entryBookName, entryFile);
                 login(this.role);
+                targetSheet = spreadsheet.getWorksheet();
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             } catch (AbortedException e) {
                 e.printStackTrace();
             }
         }
+        return targetSheet;
 
     }
 }

@@ -19,7 +19,7 @@ import java.util.*;
 public class MyWorkflow {
     private static final Logger logger = LoggerFactory.getLogger(MyWorkflow.class);
 
-    static private final String ROLE_EMPLOYEE = "employee";
+    static private final String ROLE_EMPLOYEE = "Employee";
 
     static private final String BUTTON_SUBMIT = "submit";
     static private final String BUTTON_CANCEL = "cancel";
@@ -178,7 +178,7 @@ public class MyWorkflow {
             }
             showFormList();
             addFormSelectionListener();
-            sheet.protect("", true, true, false, true, false, false, false, false, false, false, false, false, false, false, false);
+            sheet.protect("", false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true);
         } else { //supervisor
             sheet = navigateToSheet(SHEET_SUBMISSION);
             if (sheet.isProtected()){
@@ -186,7 +186,7 @@ public class MyWorkflow {
             }
             listSubmission();
             //allow filter and sorting
-            sheet.protect("", true, true, false, false, false, false, false, false, false, false, false, false, true, true, false);
+            sheet.protect("", false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true);
         }
     }
 

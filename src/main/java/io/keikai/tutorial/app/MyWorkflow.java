@@ -54,7 +54,6 @@ public class MyWorkflow {
         });
         spreadsheet.addExceptionHandler(throwable -> {
             logger.error("Oops! something wrong in Spreadsheet", throwable);
-            spreadsheet.getRange("A1").setValue(throwable.getMessage());
         });
     }
 

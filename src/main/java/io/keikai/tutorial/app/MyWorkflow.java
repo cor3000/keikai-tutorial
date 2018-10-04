@@ -67,7 +67,6 @@ public class MyWorkflow {
         this.entryFile = xlsxFile;
         spreadsheet.importAndReplace(bookName, xlsxFile);
         addEnterLeaveListeners();
-        disableSheetOperations();
     }
 
     private void addEnterLeaveListeners() {
@@ -155,17 +154,6 @@ public class MyWorkflow {
         submission.setFormName(spreadsheet.getBookName());
         submission.setOwner(this.role);
         WorkflowDao.insert(submission);
-    }
-
-    private void disableSheetOperations() {
-        spreadsheet.setUserActionEnabled(AuxAction.ADD_SHEET, false);
-        spreadsheet.setUserActionEnabled(AuxAction.MOVE_SHEET, false);
-        spreadsheet.setUserActionEnabled(AuxAction.COPY_SHEET, false);
-        spreadsheet.setUserActionEnabled(AuxAction.DELETE_SHEET, false);
-        spreadsheet.setUserActionEnabled(AuxAction.RENAME_SHEET, false);
-        spreadsheet.setUserActionEnabled(AuxAction.HIDE_SHEET, false);
-        spreadsheet.setUserActionEnabled(AuxAction.UNHIDE_SHEET, false);
-        spreadsheet.setUserActionEnabled(AuxAction.PROTECT_SHEET, false);
     }
 
     private void enter(String role) {

@@ -88,7 +88,8 @@ public class MyWorkflow {
     private void addEnterLeaveListeners() {
         spreadsheet.getWorksheet(SHEET_MAIN).getButton("enter").addAction((ShapeMouseEvent) -> {
             this.role = spreadsheet.getRange(ROLE_CELL).getValue().toString();
-            enter();
+            navigateByRole();
+            showList();
         });
         spreadsheet.getWorksheet(SHEET_FORM).getButton("leave").addAction((ShapeMouseEvent) -> {
             leave();
@@ -174,12 +175,11 @@ public class MyWorkflow {
     }
 
     /**
-     * enter form/submission list according to the role
+     * show form or submission list according to the role
      */
-    private void enter() {
-        Worksheet sheet = null;
+    private void showList() {
+        Worksheet sheet = spreadsheet.getWorksheet();
         if (role.equals(ROLE_EMPLOYEE)) {
-            sheet = navigateTo(SHEET_FORM);
             if (sheet.isProtected()) {
                 sheet.unprotect("");
             }
@@ -187,7 +187,6 @@ public class MyWorkflow {
             addFormSelectionListener();
             sheet.protect("", false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true);
         } else { //supervisor
-            sheet = navigateTo(SHEET_SUBMISSION);
             if (sheet.isProtected()) {
                 sheet.unprotect("");
             }
@@ -258,6 +257,14 @@ public class MyWorkflow {
         spreadsheet.addEventListener(Events.ON_CELL_CLICK, submissionSelectionListener);
     }
 
+    private void navigateByRole() {
+        if (role.equals(ROLE_EMPLOYEE)) {
+            spreadsheet.setActiveWorksheet(SHEET_FORM);
+        }else{
+            spreadsheet.setActiveWorksheet(SHEET_SUBMISSION);
+        }
+    }
+
     /**
      * show the target sheet, if it's necessary, import the entry file.
      */
@@ -269,7 +276,8 @@ public class MyWorkflow {
             }
         } else {
             start();
-            enter();
+            navigateByRole();
+            showList();
         }
         return spreadsheet.getWorksheet();
 

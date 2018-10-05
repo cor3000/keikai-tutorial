@@ -31,8 +31,9 @@ public class MyWorkflow {
     static private String SHEET_FORM = "form list";
     static private String SHEET_SUBMISSION = "submission list";
 
-    static private final int STARTING_COLUMN = 1;
-    static private final String ROLE_CELL = "D6";
+    static private final int STARTING_COLUMN = 2;
+    static private final int STARTING_ROW = 5;
+    static private final String ROLE_CELL = "E6";
 
     private Spreadsheet spreadsheet;
     private String role;
@@ -190,7 +191,7 @@ public class MyWorkflow {
             public void onEvent(RangeEvent rangeEvent) throws Exception {
                 if (spreadsheet.getWorksheet().getName().equals(SHEET_FORM)
                         && rangeEvent.getRange().getValue().toString().endsWith(".xlsx")) {
-                    File form = AppContextListener.getFormList().get(rangeEvent.getRow() - 2);
+                    File form = AppContextListener.getFormList().get(rangeEvent.getRow() - STARTING_ROW);
                     showForm(form);
                     spreadsheet.removeEventListener(Events.ON_CELL_CLICK, this);
                 }
@@ -200,7 +201,7 @@ public class MyWorkflow {
     }
 
     private void showFormList() {
-        int row = 2;
+        int row = STARTING_ROW;
         for (File file : AppContextListener.getFormList()) {
             spreadsheet.getRange(row, STARTING_COLUMN).setValue(file.getName());
             row++;
@@ -209,7 +210,7 @@ public class MyWorkflow {
 
     private void showSubmissionList() {
         List<Submission> submissionList = WorkflowDao.queryAll();
-        int row = 3;
+        int row = STARTING_ROW;
         for (Submission s : submissionList) {
             spreadsheet.getRange(row, STARTING_COLUMN).setValue(s.getId());
             spreadsheet.getRange(row, STARTING_COLUMN + 1).setValue(s.getFormName());

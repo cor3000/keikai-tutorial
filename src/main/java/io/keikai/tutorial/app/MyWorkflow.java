@@ -15,6 +15,7 @@ import java.util.*;
 
 /**
  * implement the workflow logic
+ *
  * @author Hawk Chen
  */
 public class MyWorkflow {
@@ -62,17 +63,32 @@ public class MyWorkflow {
         return spreadsheet.getURI(elementId);
     }
 
-    public void init(String bookName, File xlsxFile) throws FileNotFoundException, AbortedException {
-        spreadsheet.clearEventListeners();
+    public void init(String bookName, File xlsxFile) {
         this.entryBookName = bookName;
         this.entryFile = xlsxFile;
-        spreadsheet.importAndReplace(bookName, xlsxFile);
-        addEnterLeaveListeners();
+        start();
+        navigateTo(SHEET_MAIN);
+    }
+
+    /**
+     * start this workflow
+     */
+    private void start() {
+        try {
+            spreadsheet.clearEventListeners();
+            spreadsheet.importAndReplace(this.entryBookName, this.entryFile);
+            addEnterLeaveListeners();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (AbortedException e) {
+            e.printStackTrace();
+        }
     }
 
     private void addEnterLeaveListeners() {
         spreadsheet.getWorksheet(SHEET_MAIN).getButton("enter").addAction((ShapeMouseEvent) -> {
-            enter(spreadsheet.getRange(ROLE_CELL).getValue().toString());
+            this.role = spreadsheet.getRange(ROLE_CELL).getValue().toString();
+            enter();
         });
         spreadsheet.getWorksheet(SHEET_FORM).getButton("leave").addAction((ShapeMouseEvent) -> {
             leave();
@@ -157,8 +173,10 @@ public class MyWorkflow {
         WorkflowDao.insert(submission);
     }
 
-    private void enter(String role) {
-        this.role = role;
+    /**
+     * enter form/submission list according to the role
+     */
+    private void enter() {
         Worksheet sheet = null;
         if (role.equals(ROLE_EMPLOYEE)) {
             sheet = navigateTo(SHEET_FORM);
@@ -241,31 +259,19 @@ public class MyWorkflow {
     }
 
     /**
-     * show the target sheet, if it's necessary, import the corresponding file.
+     * show the target sheet, if it's necessary, import the entry file.
      */
     private Worksheet navigateTo(String sheetName) {
-        Worksheet targetSheet = null;
         if (spreadsheet.getBookName().equals(entryBookName)) {
             Worksheet currentSheet = spreadsheet.getWorksheet();
-            targetSheet = currentSheet;
             if (!currentSheet.getName().equals(sheetName)) {
-                targetSheet = spreadsheet.getWorksheet(sheetName);
-                targetSheet.setVisible(Worksheet.Visibility.Visible);
-                currentSheet.setVisible(Worksheet.Visibility.Hidden);
                 spreadsheet.setActiveWorksheet(sheetName);
             }
-        } else { //import entry book
-            try {
-                init(entryBookName, entryFile);
-                enter(this.role);
-                targetSheet = spreadsheet.getWorksheet();
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            } catch (AbortedException e) {
-                e.printStackTrace();
-            }
+        } else {
+            start();
+            enter();
         }
-        return targetSheet;
+        return spreadsheet.getWorksheet();
 
     }
 }

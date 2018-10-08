@@ -37,6 +37,7 @@ public class MyWorkflow {
     static private final String ROLE_CELL = "E6";
 
     private Spreadsheet spreadsheet;
+    private boolean submissionPopulated = false;
     private String role;
     private String entryBookName;
     private File entryFile;
@@ -77,6 +78,7 @@ public class MyWorkflow {
         try {
             spreadsheet.clearEventListeners();
             spreadsheet.importAndReplace(this.entryBookName, this.entryFile);
+            submissionPopulated = false;
             addEnterLeaveListeners();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -106,7 +108,7 @@ public class MyWorkflow {
     }
 
 
-    private void showForm(Submission s) throws AbortedException {
+    private void showSubmittedForm(Submission s) throws AbortedException {
         if (s.getState() == Submission.State.WAITING) {
             spreadsheet.clearEventListeners();
             spreadsheet.importAndReplace(s.getFormName(), new ByteArrayInputStream(s.getForm().toByteArray()));
@@ -187,12 +189,14 @@ public class MyWorkflow {
             addFormSelectionListener();
             sheet.protect("", false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true);
         } else { //supervisor
-            if (sheet.isProtected()) {
-                sheet.unprotect("");
+            if (!submissionPopulated) {
+                if (sheet.isProtected()) {
+                    sheet.unprotect("");
+                }
+                showSubmissionList();
+                //allow filter and sorting
+                sheet.protect("", false, false, false, false, false, false, false, false, false, false, false, true, true, false, true, true);
             }
-            showSubmissionList();
-            //allow filter and sorting
-            sheet.protect("", false, false, false, false, false, false, false, false, false, false, false, true, true, false, true, true);
         }
     }
 
@@ -225,8 +229,17 @@ public class MyWorkflow {
         }
     }
 
+    /**
+     * populate submissions into cells from the database
+     */
     private void showSubmissionList() {
         List<Submission> submissionList = WorkflowDao.queryAll();
+        //create table rows first
+        //the table contains 2 rows initially for copying date format when inserting rows
+        for (int r = STARTING_ROW + 1 ; r < (STARTING_ROW + 1) + submissionList.size() - 2 ; r ++) {
+            spreadsheet.getRange(r, 0).getEntireRow().insert(Range.InsertShiftDirection.ShiftDown, Range.InsertFormatOrigin.LeftOrAbove);
+        }
+
         int row = STARTING_ROW;
         for (Submission s : submissionList) {
             spreadsheet.getRange(row, STARTING_COLUMN).setValue(s.getId());
@@ -236,11 +249,14 @@ public class MyWorkflow {
             spreadsheet.getRange(row, STARTING_COLUMN + 4).setValue(DateUtil.getExcelDate(Date.from(s.getLastUpdate().atZone(ZoneId.systemDefault()).toInstant())));
             row++;
         }
+        submissionPopulated = true;
+
         RangeEventListener submissionSelectionListener = new RangeEventListener() {
 
             @Override
             public void onEvent(RangeEvent rangeEvent) throws Exception {
-                if (!rangeEvent.getWorksheet().getName().equals(SHEET_SUBMISSION)) {
+                if (!rangeEvent.getWorksheet().getName().equals(SHEET_SUBMISSION)
+                    && (rangeEvent.getColumn() <2 || rangeEvent.getColumn() >6)) { //inside table columns
                     return;
                 }
                 Range idCell = spreadsheet.getRange(rangeEvent.getRange().getRow(), STARTING_COLUMN);
@@ -248,7 +264,8 @@ public class MyWorkflow {
                 for (Submission s : submissionList) {
                     if (s.getId() == id) {
                         submissionToReview = s;
-                        showForm(s);
+                        showSubmittedForm(s);
+                        submissionPopulated = false;
                         break;
                     }
                 }

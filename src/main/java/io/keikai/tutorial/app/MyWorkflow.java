@@ -27,6 +27,8 @@ public class MyWorkflow {
     static private final String BUTTON_CANCEL = "cancel";
     static private final String BUTTON_APPROVE = "approve";
     static private final String BUTTON_REJECT = "reject";
+    private static final String BUTTON_ENTER = "enter";
+    private static final String BUTTON_LEAVE = "leave";
 
     static private String SHEET_MAIN = "main";
     static private String SHEET_FORM = "form list";
@@ -88,15 +90,15 @@ public class MyWorkflow {
     }
 
     private void addEnterLeaveListeners() {
-        spreadsheet.getWorksheet(SHEET_MAIN).getButton("enter").addAction((ShapeMouseEvent) -> {
+        spreadsheet.getWorksheet(SHEET_MAIN).getButton(BUTTON_ENTER).addAction((ShapeMouseEvent) -> {
             this.role = spreadsheet.getRange(ROLE_CELL).getValue().toString();
             navigateByRole();
             showList();
         });
-        spreadsheet.getWorksheet(SHEET_FORM).getButton("leave").addAction((ShapeMouseEvent) -> {
+        spreadsheet.getWorksheet(SHEET_FORM).getButton(BUTTON_LEAVE).addAction((ShapeMouseEvent) -> {
             leave();
         });
-        spreadsheet.getWorksheet(SHEET_SUBMISSION).getButton("leave").addAction((ShapeMouseEvent) -> {
+        spreadsheet.getWorksheet(SHEET_SUBMISSION).getButton(BUTTON_LEAVE).addAction((ShapeMouseEvent) -> {
             leave();
         });
     }

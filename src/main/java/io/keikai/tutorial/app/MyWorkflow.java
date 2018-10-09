@@ -82,10 +82,8 @@ public class MyWorkflow {
             spreadsheet.importAndReplace(this.entryBookName, this.entryFile);
             submissionPopulated = false;
             addEnterLeaveListeners();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (AbortedException e) {
-            e.printStackTrace();
+        } catch (FileNotFoundException | AbortedException e) {
+            logger.error("An error happens at starting a workflow: " + e);
         }
     }
 
@@ -184,6 +182,7 @@ public class MyWorkflow {
     private void showList() {
         Worksheet sheet = spreadsheet.getWorksheet();
         if (role.equals(ROLE_EMPLOYEE)) {
+            // need to unprotect a sheet before populating a list into cells
             if (sheet.isProtected()) {
                 sheet.unprotect("");
             }
@@ -216,7 +215,6 @@ public class MyWorkflow {
                         && rangeEvent.getRange().getValue().toString().endsWith(".xlsx")) {
                     File form = AppContextListener.getFormList().get(rangeEvent.getRow() - STARTING_ROW);
                     showForm(form);
-                    spreadsheet.removeEventListener(Events.ON_CELL_CLICK, this);
                 }
             }
         };
@@ -238,7 +236,7 @@ public class MyWorkflow {
         List<Submission> submissionList = WorkflowDao.queryAll();
         //create table rows first
         //the table contains 2 rows initially for copying date format when inserting rows
-        for (int r = STARTING_ROW + 1 ; r < (STARTING_ROW + 1) + submissionList.size() - 2 ; r ++) {
+        for (int r = STARTING_ROW + 1; r < (STARTING_ROW + 1) + submissionList.size() - 2; r++) {
             spreadsheet.getRange(r, 0).getEntireRow().insert(Range.InsertShiftDirection.ShiftDown, Range.InsertFormatOrigin.LeftOrAbove);
         }
 
@@ -258,7 +256,7 @@ public class MyWorkflow {
             @Override
             public void onEvent(RangeEvent rangeEvent) throws Exception {
                 if (!rangeEvent.getWorksheet().getName().equals(SHEET_SUBMISSION)
-                    || (rangeEvent.getColumn() <2 || rangeEvent.getColumn() >6)) { //inside table columns
+                        || (rangeEvent.getColumn() < 2 || rangeEvent.getColumn() > 6)) { //inside table columns
                     return;
                 }
                 Range idCell = spreadsheet.getRange(rangeEvent.getRange().getRow(), STARTING_COLUMN);
@@ -279,7 +277,7 @@ public class MyWorkflow {
     private void navigateByRole() {
         if (role.equals(ROLE_EMPLOYEE)) {
             spreadsheet.setActiveWorksheet(SHEET_FORM);
-        }else{
+        } else {
             spreadsheet.setActiveWorksheet(SHEET_SUBMISSION);
         }
     }

@@ -113,6 +113,7 @@ public class MyWorkflow {
             spreadsheet.clearEventListeners();
             spreadsheet.importAndReplace(s.getFormName(), new ByteArrayInputStream(s.getForm().toByteArray()));
             setupButtonsUponRole(spreadsheet.getWorksheet());
+            spreadsheet.getWorksheet().protect("", false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false);
         }
     }
 
@@ -164,7 +165,7 @@ public class MyWorkflow {
     }
 
     /**
-     * submit a form to the next phase: approve by a supervisor
+     * submit a form and create a submission in the database
      */
     private void submit() {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();

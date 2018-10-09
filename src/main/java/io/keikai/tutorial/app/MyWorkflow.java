@@ -109,12 +109,10 @@ public class MyWorkflow {
 
 
     private void showSubmittedForm(Submission s) throws AbortedException {
-        if (s.getState() == Submission.State.WAITING) {
-            spreadsheet.clearEventListeners();
-            spreadsheet.importAndReplace(s.getFormName(), new ByteArrayInputStream(s.getForm().toByteArray()));
-            setupButtonsUponRole(spreadsheet.getWorksheet());
-            spreadsheet.getWorksheet().protect("", false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false);
-        }
+        spreadsheet.clearEventListeners();
+        spreadsheet.importAndReplace(s.getFormName(), new ByteArrayInputStream(s.getForm().toByteArray()));
+        setupButtonsUponRole(spreadsheet.getWorksheet());
+        spreadsheet.getWorksheet().protect("", false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false);
     }
 
     private void setupButtonsUponRole(Worksheet worksheet) {
@@ -263,7 +261,8 @@ public class MyWorkflow {
                 Range idCell = spreadsheet.getRange(rangeEvent.getRange().getRow(), STARTING_COLUMN);
                 int id = idCell.getRangeValue().getCellValue().getDoubleValue().intValue();
                 for (Submission s : submissionList) {
-                    if (s.getId() == id) {
+                    if (s.getId() == id
+                        && s.getState() == Submission.State.WAITING) {
                         submissionToReview = s;
                         showSubmittedForm(s);
                         submissionPopulated = false;

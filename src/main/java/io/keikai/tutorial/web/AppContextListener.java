@@ -21,8 +21,8 @@ public class AppContextListener implements ServletContextListener {
     }
 
     static private void loadFormList(ServletContext context) {
-        formList.add(new File(context.getRealPath(Configuration.getDefaultFileFolder() + "form_leave.xlsx")));
-        formList.add(new File(context.getRealPath(Configuration.getDefaultFileFolder() + "business_trip.xlsx")));
+        formList.add(new File(context.getRealPath(Configuration.getDefaultFileFolder() + "Leave Application.xlsx")));
+        formList.add(new File(context.getRealPath(Configuration.getDefaultFileFolder() + "Business Trip.xlsx")));
     }
 
     @Override

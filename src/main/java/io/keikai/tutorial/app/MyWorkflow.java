@@ -29,6 +29,7 @@ public class MyWorkflow {
     static private final String BUTTON_REJECT = "reject";
     private static final String BUTTON_ENTER = "enter";
     private static final String BUTTON_LEAVE = "leave";
+    public static final String XLSX = ".xlsx";
 
     static private String SHEET_MAIN = "main";
     static private String SHEET_FORM = "form list";
@@ -170,7 +171,7 @@ public class MyWorkflow {
         spreadsheet.export(spreadsheet.getBookName(), outputStream);
         Submission submission = new Submission();
         submission.setForm(outputStream);
-        submission.setFormName(spreadsheet.getBookName());
+        submission.setFormName(spreadsheet.getBookName().replace(XLSX, ""));
         submission.setOwner(this.role);
         WorkflowDao.insert(submission);
     }
@@ -210,9 +211,11 @@ public class MyWorkflow {
 
             @Override
             public void onEvent(RangeEvent rangeEvent) throws Exception {
+                int fileIndex = rangeEvent.getRow() - STARTING_ROW;
                 if (spreadsheet.getWorksheet().getName().equals(SHEET_FORM)
-                        && rangeEvent.getRange().getValue().toString().endsWith(".xlsx")) {
-                    File form = AppContextListener.getFormList().get(rangeEvent.getRow() - STARTING_ROW);
+                    && rangeEvent.getColumn() == 2
+                    && fileIndex < AppContextListener.getFormList().size()){
+                    File form = AppContextListener.getFormList().get(fileIndex);
                     showForm(form);
                 }
             }
@@ -223,7 +226,7 @@ public class MyWorkflow {
     private void showFormList() {
         int row = STARTING_ROW;
         for (File file : AppContextListener.getFormList()) {
-            spreadsheet.getRange(row, STARTING_COLUMN).setValue(file.getName());
+            spreadsheet.getRange(row, STARTING_COLUMN).setValue(file.getName().replace(XLSX, ""));
             row++;
         }
     }

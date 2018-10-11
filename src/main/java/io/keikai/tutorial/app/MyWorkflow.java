@@ -128,7 +128,7 @@ public class MyWorkflow {
             cancel.addAction(buttonShapeMouseEvent -> {
                 navigateTo(SHEET_FORM);
             });
-            submit.addAction((ShapeMouseEvent<Button> event) -> {
+            submit.addAction(buttonShapeMouseEvent -> {
                 submit();
                 navigateTo(SHEET_FORM);
             });
@@ -137,7 +137,7 @@ public class MyWorkflow {
             cancel.setVisible(false);
             approve.setVisible(true);
             reject.setVisible(true);
-            approve.addAction(shapeMouseEvent -> {
+            approve.addAction(buttonShapeMouseEvent -> {
                 approve();
                 navigateTo(SHEET_SUBMISSION);
             });

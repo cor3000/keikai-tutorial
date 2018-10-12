@@ -89,15 +89,15 @@ public class MyWorkflow {
     }
 
     private void addEnterLeaveListeners() {
-        spreadsheet.getWorksheet(SHEET_MAIN).getButton(BUTTON_ENTER).addAction((ShapeMouseEvent) -> {
+        spreadsheet.getWorksheet(SHEET_MAIN).getButton(BUTTON_ENTER).addAction(shapeMouseEvent -> {
             this.role = spreadsheet.getRange(ROLE_CELL).getValue().toString();
             navigateByRole();
             showList();
         });
-        spreadsheet.getWorksheet(SHEET_FORM).getButton(BUTTON_LEAVE).addAction((ShapeMouseEvent) -> {
+        spreadsheet.getWorksheet(SHEET_FORM).getButton(BUTTON_LEAVE).addAction(shapeMouseEvent -> {
             leave();
         });
-        spreadsheet.getWorksheet(SHEET_SUBMISSION).getButton(BUTTON_LEAVE).addAction((ShapeMouseEvent) -> {
+        spreadsheet.getWorksheet(SHEET_SUBMISSION).getButton(BUTTON_LEAVE).addAction(shapeMouseEvent -> {
             leave();
         });
     }
@@ -113,7 +113,7 @@ public class MyWorkflow {
         spreadsheet.clearEventListeners();
         spreadsheet.importAndReplace(s.getFormName(), new ByteArrayInputStream(s.getForm().toByteArray()));
         setupButtonsUponRole(spreadsheet.getWorksheet());
-        spreadsheet.getWorksheet().protect("", false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false);
+        spreadsheet.getWorksheet().protect(new SheetProtection.Builder().build());
     }
 
     private void setupButtonsUponRole(Worksheet worksheet) {
@@ -126,10 +126,10 @@ public class MyWorkflow {
             cancel.setVisible(true);
             approve.setVisible(false);
             reject.setVisible(false);
-            cancel.addAction(buttonShapeMouseEvent -> {
+            cancel.addAction(shapeMouseEvent -> {
                 navigateTo(SHEET_FORM);
             });
-            submit.addAction(buttonShapeMouseEvent -> {
+            submit.addAction(shapeMouseEvent -> {
                 submit();
                 navigateTo(SHEET_FORM);
             });
@@ -138,11 +138,11 @@ public class MyWorkflow {
             cancel.setVisible(false);
             approve.setVisible(true);
             reject.setVisible(true);
-            approve.addAction(buttonShapeMouseEvent -> {
+            approve.addAction(shapeMouseEvent -> {
                 approve();
                 navigateTo(SHEET_SUBMISSION);
             });
-            reject.addAction(buttonShapeMouseEvent -> {
+            reject.addAction(shapeMouseEvent -> {
                 reject();
                 navigateTo(SHEET_SUBMISSION);
             });
@@ -188,7 +188,10 @@ public class MyWorkflow {
             }
             showFormList();
             addFormSelectionListener();
-            sheet.protect("", false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true);
+            sheet.protect(new SheetProtection.Builder().setPassword("")
+                    .setAllowSelectLockedCells(true)
+                    .setAllowSelectUnlockedCells(true)
+                    .build());
         } else { //supervisor
             if (!submissionPopulated) {
                 if (sheet.isProtected()) {
@@ -196,7 +199,12 @@ public class MyWorkflow {
                 }
                 showSubmissionList();
                 //allow filter and sorting
-                sheet.protect("", false, false, false, false, false, false, false, false, false, false, false, true, true, false, true, true);
+                sheet.protect(new SheetProtection.Builder().setPassword("")
+                        .setAllowFiltering(true)
+                        .setAllowSorting(true)
+                        .setAllowSelectLockedCells(true)
+                        .setAllowSelectUnlockedCells(true)
+                        .build());
             }
         }
     }
@@ -213,8 +221,9 @@ public class MyWorkflow {
             public void onEvent(RangeEvent rangeEvent) throws Exception {
                 int fileIndex = rangeEvent.getRow() - STARTING_ROW;
                 if (spreadsheet.getWorksheet().getName().equals(SHEET_FORM)
-                    && rangeEvent.getColumn() == 2
-                    && fileIndex < AppContextListener.getFormList().size()){
+                        && rangeEvent.getColumn() == 2
+                        && rangeEvent.getRow() >= STARTING_ROW
+                        && fileIndex < AppContextListener.getFormList().size()) {
                     File form = AppContextListener.getFormList().get(fileIndex);
                     showForm(form);
                 }
@@ -265,7 +274,7 @@ public class MyWorkflow {
                 int id = idCell.getRangeValue().getCellValue().getDoubleValue().intValue();
                 for (Submission s : submissionList) {
                     if (s.getId() == id
-                        && s.getState() == Submission.State.WAITING) {
+                            && s.getState() == Submission.State.WAITING) {
                         submissionToReview = s;
                         showSubmittedForm(s);
                         submissionPopulated = false;
